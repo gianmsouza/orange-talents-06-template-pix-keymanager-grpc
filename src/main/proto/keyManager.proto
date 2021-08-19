@@ -8,13 +8,28 @@ option objc_class_prefix = "HLW";
 package br.com.zup.gian;
 
 service KeyManagerService {
-  rpc send (KeyManagerRequest) returns (KeyManagerReply) {}
+  rpc registraChavePix(RegistraChavePixRequest) returns (RegistraChavePixResponse) {}
 }
 
-message KeyManagerRequest {
-  string name = 1;
+enum TipoChave {
+  CPF = 0;
+  PHONE = 1;
+  EMAIL = 2;
+  RANDOM = 3;
+  CNPJ = 4;
+}
+enum TipoConta {
+  CONTA_CORRENTE = 0;
+  CONTA_POUPANCA = 1;
 }
 
-message KeyManagerReply {
-  string message = 1;
+message RegistraChavePixRequest {
+  string id = 1;
+  TipoChave tipoChave = 2;
+  string valorChave = 3; //valor informado pelo user para o tipo de chave (celular, cpf)
+  TipoConta tipoConta = 4;
+}
+
+message RegistraChavePixResponse {
+  string id = 1;
 }
