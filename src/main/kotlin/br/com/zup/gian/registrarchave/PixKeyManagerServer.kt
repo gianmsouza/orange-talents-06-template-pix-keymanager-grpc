@@ -6,6 +6,7 @@ import br.com.zup.gian.RegistraChavePixResponse
 import br.com.zup.gian.client.BCBClient
 import br.com.zup.gian.client.ItauClient
 import io.grpc.Status
+import io.grpc.StatusRuntimeException
 import io.grpc.stub.StreamObserver
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import org.slf4j.LoggerFactory
@@ -45,10 +46,10 @@ class PixKeyManagerServer(
 
                 responseObserver!!.onNext(response)
                 responseObserver.onCompleted()
-            } catch (error: HttpClientResponseException) {
+            } catch (error: Exception) {
                 logger.info("Registro de chave PIX com falha")
 
-                if (error.status.code == 422) {
+                if (error.message != null && error.message.toString().contains("UNPROCESSABLE_ENTITY")) {
                     logger.error("Chave já cadastrada no Banco Central")
 
                     val e = Status.ALREADY_EXISTS
@@ -58,7 +59,15 @@ class PixKeyManagerServer(
                         .asRuntimeException()
 
                     responseObserver?.onError(e)
+                    return
                 }
+                val e = Status.INTERNAL
+                    .withDescription(
+                        "Não foi possível a comunicação com o serviço do Banco Central"
+                    )
+                    .asRuntimeException()
+
+                responseObserver?.onError(e)
             }
         }
     }

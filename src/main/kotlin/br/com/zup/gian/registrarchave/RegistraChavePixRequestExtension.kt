@@ -69,6 +69,17 @@ fun RegistraChavePixRequest.validarCampos(
         return false
     }
 
+    val possivelChave = chavePixRepository.findByValorChave(valorChave)
+
+    if (possivelChave.isPresent) {
+        val e = Status.ALREADY_EXISTS
+            .withDescription("Chave já cadastrada no sistema")
+            .asRuntimeException()
+
+        responseObserver?.onError(e)
+        return false
+    }
+
     val dadosDaContaResponse = itauClient.buscarDadosConta(this.id, this.tipoConta.toString())
 
     if (dadosDaContaResponse.body() == null) {
@@ -77,17 +88,6 @@ fun RegistraChavePixRequest.validarCampos(
                 "Cliente não encontrado no ERP Itaú. " +
                         "Verifique também se o tipo de conta informado está correto"
             )
-            .asRuntimeException()
-
-        responseObserver?.onError(e)
-        return false
-    }
-
-    val possivelChave = chavePixRepository.findByValorChave(valorChave)
-
-    if (possivelChave.isPresent) {
-        val e = Status.ALREADY_EXISTS
-            .withDescription("Chave já cadastrada no sistema")
             .asRuntimeException()
 
         responseObserver?.onError(e)
