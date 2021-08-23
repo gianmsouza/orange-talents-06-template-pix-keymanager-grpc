@@ -7,8 +7,12 @@ option objc_class_prefix = "HLW";
 
 package br.com.zup.gian;
 
-service KeyManagerService {
-  rpc registraChavePix(RegistraChavePixRequest) returns (RegistraChavePixResponse) {}
+service KeyManagerRegistraChaveService {
+  rpc registrar(RegistraChavePixRequest) returns (RegistraChavePixResponse) {}
+}
+
+service KeyManagerRemoveChaveService {
+  rpc remover(RemoveChavePixRequest) returns (RemoveChavePixResponse) {}
 }
 
 enum TipoChave {
@@ -32,4 +36,13 @@ message RegistraChavePixRequest {
 
 message RegistraChavePixResponse {
   string id = 1;
+}
+
+message RemoveChavePixRequest {
+  string chavePixId = 1;
+  string clientId = 2;
+}
+
+message RemoveChavePixResponse {
+  string chavePixId = 1;
 }

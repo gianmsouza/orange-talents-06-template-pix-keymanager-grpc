@@ -1,6 +1,6 @@
 package br.com.zup.gian.registrarchave
 
-import br.com.zup.gian.KeyManagerServiceGrpc
+import br.com.zup.gian.KeyManagerRegistraChaveServiceGrpc
 import br.com.zup.gian.RegistraChavePixRequest
 import br.com.zup.gian.TipoChave
 import br.com.zup.gian.TipoConta
@@ -10,7 +10,6 @@ import br.com.zup.gian.registrarchave.bcb.*
 import br.com.zup.gian.registrarchave.itau.DadosDaContaResponse
 import br.com.zup.gian.registrarchave.itau.InstituicaoResponse
 import br.com.zup.gian.registrarchave.itau.TitularResponse
-import com.google.api.Http
 import io.grpc.ManagedChannel
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
@@ -18,29 +17,22 @@ import io.micronaut.context.annotation.Factory
 import io.micronaut.grpc.annotation.GrpcChannel
 import io.micronaut.grpc.server.GrpcServerChannel
 import io.micronaut.http.HttpResponse
-import io.micronaut.http.HttpStatus
-import io.micronaut.http.client.HttpClient
-import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.BDDMockito
-import org.mockito.Mock
 import org.mockito.Mockito
-import java.beans.beancontext.BeanContextProxy
-import java.lang.RuntimeException
 import java.time.LocalDate
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @MicronautTest(transactional = false)
-internal class PixKeyManagerServerTest(
+internal class RegistraChavePixServerTest(
     val repository: ChavePixRepository,
-    val grpcClient: KeyManagerServiceGrpc.KeyManagerServiceBlockingStub
+    val grpcClient: KeyManagerRegistraChaveServiceGrpc.KeyManagerRegistraChaveServiceBlockingStub
 ) {
 
     @field:Inject
@@ -66,7 +58,7 @@ internal class PixKeyManagerServerTest(
         Mockito.`when`(bcbClient.registrarChavePix(createPixKeyRequest()))
             .thenReturn(HttpResponse.ok(createPixKeyResponse()))
 
-        val response = grpcClient.registraChavePix(
+        val response = grpcClient.registrar(
             RegistraChavePixRequest.newBuilder()
                 .setId(clientId)
                 .setTipoChave(TipoChave.EMAIL)
@@ -90,7 +82,7 @@ internal class PixKeyManagerServerTest(
             .thenThrow(RuntimeException("UNPROCESSABLE_ENTITY"))
 
         val excecao = assertThrows<StatusRuntimeException> {
-            grpcClient.registraChavePix(
+            grpcClient.registrar(
                 RegistraChavePixRequest.newBuilder()
                     .setId(clientId)
                     .setTipoChave(TipoChave.EMAIL)
@@ -116,7 +108,7 @@ internal class PixKeyManagerServerTest(
             .thenThrow(RuntimeException())
 
         val excecao = assertThrows<StatusRuntimeException> {
-            grpcClient.registraChavePix(
+            grpcClient.registrar(
                 RegistraChavePixRequest.newBuilder()
                     .setId(clientId)
                     .setTipoChave(TipoChave.EMAIL)
@@ -139,7 +131,7 @@ internal class PixKeyManagerServerTest(
             HttpResponse.ok(null))
 
         val excecao = assertThrows<StatusRuntimeException> {
-            grpcClient.registraChavePix(
+            grpcClient.registrar(
                 RegistraChavePixRequest.newBuilder()
                     .setId(clientId)
                     .setTipoChave(TipoChave.EMAIL)
@@ -168,7 +160,7 @@ internal class PixKeyManagerServerTest(
         repository.save(chavePix)
 
         val excecao = assertThrows<StatusRuntimeException> {
-            grpcClient.registraChavePix(
+            grpcClient.registrar(
                 RegistraChavePixRequest.newBuilder()
                     .setId(clientId)
                     .setTipoChave(TipoChave.EMAIL)
@@ -188,7 +180,7 @@ internal class PixKeyManagerServerTest(
         val clientId: String = UUID.randomUUID().toString()
 
         val excecao = assertThrows<StatusRuntimeException> {
-            grpcClient.registraChavePix(
+            grpcClient.registrar(
                 RegistraChavePixRequest.newBuilder()
                     .setId(clientId)
                     .setTipoChave(TipoChave.EMAIL)
@@ -208,7 +200,7 @@ internal class PixKeyManagerServerTest(
         val clientId: String = UUID.randomUUID().toString()
 
         val excecao = assertThrows<StatusRuntimeException> {
-            grpcClient.registraChavePix(
+            grpcClient.registrar(
                 RegistraChavePixRequest.newBuilder()
                     .setId(clientId)
                     .setTipoChave(TipoChave.PHONE)
@@ -228,7 +220,7 @@ internal class PixKeyManagerServerTest(
         val clientId: String = UUID.randomUUID().toString()
 
         val excecao = assertThrows<StatusRuntimeException> {
-            grpcClient.registraChavePix(
+            grpcClient.registrar(
                 RegistraChavePixRequest.newBuilder()
                     .setId(clientId)
                     .setTipoChave(TipoChave.CPF)
@@ -248,7 +240,7 @@ internal class PixKeyManagerServerTest(
         val clientId: String = UUID.randomUUID().toString()
 
         val excecao = assertThrows<StatusRuntimeException> {
-            grpcClient.registraChavePix(
+            grpcClient.registrar(
                 RegistraChavePixRequest.newBuilder()
                     .setId(clientId)
                     .setTipoChave(TipoChave.EMAIL)
@@ -266,7 +258,7 @@ internal class PixKeyManagerServerTest(
     @Test
     fun `nao deve inserir chave com id em formato diferente de UUID`() {
         val excecao = assertThrows<StatusRuntimeException> {
-            grpcClient.registraChavePix(
+            grpcClient.registrar(
                 RegistraChavePixRequest.newBuilder()
                     .setId("123456")
                     .setTipoChave(TipoChave.EMAIL)
@@ -286,7 +278,7 @@ internal class PixKeyManagerServerTest(
         val clientId: String = UUID.randomUUID().toString()
 
         val excecao = assertThrows<StatusRuntimeException> {
-            grpcClient.registraChavePix(
+            grpcClient.registrar(
                 RegistraChavePixRequest.newBuilder()
                     .setId(clientId)
                     .setTipoChave(TipoChave.RANDOM)
@@ -374,8 +366,9 @@ internal class PixKeyManagerServerTest(
     @Factory
     class Clients {
         @Singleton
-        fun blockingStub(@GrpcChannel(GrpcServerChannel.NAME) channel: ManagedChannel): KeyManagerServiceGrpc.KeyManagerServiceBlockingStub? {
-            return KeyManagerServiceGrpc.newBlockingStub(channel)
+        fun blockingStub(@GrpcChannel(GrpcServerChannel.NAME) channel: ManagedChannel):
+                KeyManagerRegistraChaveServiceGrpc.KeyManagerRegistraChaveServiceBlockingStub? {
+            return KeyManagerRegistraChaveServiceGrpc.newBlockingStub(channel)
         }
     }
 
