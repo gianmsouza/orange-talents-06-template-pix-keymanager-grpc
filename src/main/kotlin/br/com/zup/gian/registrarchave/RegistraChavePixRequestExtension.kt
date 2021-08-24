@@ -119,11 +119,11 @@ fun RegistraChavePixRequest.toBCBCreatePixkeyRequest(itauClient: ItauClient): Cr
         TipoConta.CONTA_CORRENTE -> AccountType.CACC
         else -> AccountType.SVGS
     }
-    val bankAccount: BankAccountRequest = BankAccountRequest(ispb, branch, accountNumber, accountType)
+    val bankAccount = BankAccountRequest(ispb, branch, accountNumber, accountType)
 
     val name = dadosDaContaResponse.body().titular.nome
     val taxIdNumber = dadosDaContaResponse.body().titular.cpf
-    val owner: OwnerRequest = OwnerRequest(Type.NATURAL_PERSON, name, taxIdNumber)
+    val owner = OwnerRequest(Type.NATURAL_PERSON, name, taxIdNumber)
 
     return CreatePixKeyRequest(tipoChave, valorChave, bankAccount, owner)
 }

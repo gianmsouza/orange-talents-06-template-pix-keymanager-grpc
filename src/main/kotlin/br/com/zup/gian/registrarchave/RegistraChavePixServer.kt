@@ -26,16 +26,16 @@ class RegistraChavePixServer(
     ) {
         logger.info("Novo registro de chave PIX em andamento")
 
-        if (!request.validarCampos(responseObserver, itauClient, chavePixRepository)) {
-            logger.info("Registro de chave PIX falhou na validação de campos")
-            return
-        }
-
         try {
+            if (!request.validarCampos(responseObserver, itauClient, chavePixRepository)) {
+                logger.info("Registro de chave PIX falhou na validação de campos")
+                return
+            }
+
             val bcbCreatePixKeyRequest = request.toBCBCreatePixkeyRequest(itauClient)
             bcbClient.registrarChavePix(bcbCreatePixKeyRequest)
 
-            val chavePix: ChavePix = request.toModel()
+            val chavePix = request.toModel()
             chavePixRepository.save(chavePix)
 
             val response = RegistraChavePixResponse.newBuilder()
@@ -49,7 +49,7 @@ class RegistraChavePixServer(
         } catch (error: Exception) {
             logger.info("Registro de chave PIX com falha")
 
-            if (error.message != null && error.message.toString().contains("UNPROCESSABLE_ENTITY")) {
+            if (error.message.toString().contains("UNPROCESSABLE_ENTITY")) {
                 logger.error("Chave já cadastrada no Banco Central")
 
                 val e = Status.ALREADY_EXISTS
@@ -63,7 +63,7 @@ class RegistraChavePixServer(
             }
             val e = Status.INTERNAL
                 .withDescription(
-                    "Não foi possível a comunicação com o serviço do Banco Central"
+                    "Não foi possível a comunicação com os serviços externos, tente novamente em alguns minutos"
                 )
                 .asRuntimeException()
 
