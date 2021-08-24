@@ -33,9 +33,9 @@ class RegistraChavePixServer(
             }
 
             val bcbCreatePixKeyRequest = request.toBCBCreatePixkeyRequest(itauClient)
-            bcbClient.registrarChavePix(bcbCreatePixKeyRequest)
+            val bcbCreatePixKeyResponse = bcbClient.registrarChavePix(bcbCreatePixKeyRequest)
 
-            val chavePix = request.toModel()
+            val chavePix = request.toModel(bcbCreatePixKeyResponse.body())
             chavePixRepository.save(chavePix)
 
             val response = RegistraChavePixResponse.newBuilder()

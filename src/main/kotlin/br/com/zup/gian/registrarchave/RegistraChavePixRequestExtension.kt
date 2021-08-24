@@ -7,7 +7,6 @@ import br.com.zup.gian.client.ItauClient
 import br.com.zup.gian.registrarchave.bcb.*
 import io.grpc.Status
 import io.grpc.stub.StreamObserver
-import java.util.*
 
 fun RegistraChavePixRequest.validarCampos(
     responseObserver: StreamObserver<RegistraChavePixResponse>?,
@@ -97,15 +96,15 @@ fun RegistraChavePixRequest.validarCampos(
     return true
 }
 
-fun RegistraChavePixRequest.toModel(): ChavePix {
+fun RegistraChavePixRequest.toModel(bcbCreatePixKeyResponse: CreatePixKeyResponse): ChavePix {
     return ChavePix(
-        clientId = id,
-        tipoChave = tipoChave,
-        valorChave = when {
-            this.valorChave.trim().isBlank() -> UUID.randomUUID().toString()
-            else -> this.valorChave
-        },
-        tipoConta = tipoConta
+        clientId = this.id,
+        tipoChave = bcbCreatePixKeyResponse.keyType,
+        valorChave = bcbCreatePixKeyResponse.key,
+        tipoConta = when (bcbCreatePixKeyResponse.bankAccount.accountType) {
+            AccountType.CACC -> TipoConta.CONTA_CORRENTE
+            else -> TipoConta.CONTA_POUPANCA
+        }
     )
 }
 
