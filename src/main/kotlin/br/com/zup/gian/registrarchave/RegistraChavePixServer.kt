@@ -52,22 +52,22 @@ class RegistraChavePixServer(
             if (error.message.toString().contains("UNPROCESSABLE_ENTITY")) {
                 logger.error("Chave já cadastrada no Banco Central")
 
-                val e = Status.ALREADY_EXISTS
-                    .withDescription(
-                        "Chave já cadastrada no Banco Central"
-                    )
-                    .asRuntimeException()
-
-                responseObserver?.onError(e)
+                responseObserver?.onError(
+                    Status.ALREADY_EXISTS
+                        .withDescription(
+                            "Chave já cadastrada no Banco Central"
+                        )
+                        .asRuntimeException()
+                )
                 return
             }
-            val e = Status.INTERNAL
-                .withDescription(
-                    "Não foi possível a comunicação com os serviços externos, tente novamente em alguns minutos"
-                )
-                .asRuntimeException()
-
-            responseObserver?.onError(e)
+            responseObserver?.onError(
+                Status.INTERNAL
+                    .withDescription(
+                        "Não foi possível a comunicação com os serviços externos, tente novamente em alguns minutos"
+                    )
+                    .asRuntimeException()
+            )
         }
     }
 }
