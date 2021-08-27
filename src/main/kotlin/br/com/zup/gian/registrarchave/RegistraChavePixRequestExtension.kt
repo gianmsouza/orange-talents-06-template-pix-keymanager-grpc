@@ -7,6 +7,7 @@ import br.com.zup.gian.client.ItauClient
 import br.com.zup.gian.registrarchave.bcb.*
 import io.grpc.Status
 import io.grpc.stub.StreamObserver
+import java.time.LocalDateTime
 
 fun RegistraChavePixRequest.validarCampos(
     responseObserver: StreamObserver<RegistraChavePixResponse>?,
@@ -104,7 +105,8 @@ fun RegistraChavePixRequest.toModel(bcbCreatePixKeyResponse: CreatePixKeyRespons
         tipoConta = when (bcbCreatePixKeyResponse.bankAccount.accountType) {
             AccountType.CACC -> TipoConta.CONTA_CORRENTE
             else -> TipoConta.CONTA_POUPANCA
-        }
+        },
+        criadoEm = LocalDateTime.parse(bcbCreatePixKeyResponse.createdAt)
     )
 }
 

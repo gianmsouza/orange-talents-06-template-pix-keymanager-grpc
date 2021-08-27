@@ -40,7 +40,7 @@ class ConsultaChavePixServer(
             responseObserver!!.onNext(response)
             responseObserver.onCompleted()
         } catch (e: Exception) {
-            logger.info("Erro na consulta da chave: " + e.message)
+            logger.error("Erro na consulta da chave: " + e.message)
             when (e) {
                 is IllegalArgumentException -> responseObserver.onError(
                     Status.NOT_FOUND.withDescription(e.message)
