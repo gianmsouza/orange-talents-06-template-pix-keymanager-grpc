@@ -64,7 +64,6 @@ fun ConsultaChavePixRequest.toPixKeyDetails(
     val filtro = when (filtroCase) {
         PIXID -> pixId.let { porPixId(it.clientId, it.chavePixId, chavePixRepository, bcbClient) }
         CHAVE -> porChave(chave, bcbClient)
-
         else -> HttpResponse.notFound()
     }
 

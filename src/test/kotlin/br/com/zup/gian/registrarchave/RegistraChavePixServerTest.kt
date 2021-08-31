@@ -17,6 +17,7 @@ import io.micronaut.context.annotation.Factory
 import io.micronaut.grpc.annotation.GrpcChannel
 import io.micronaut.grpc.server.GrpcServerChannel
 import io.micronaut.http.HttpResponse
+import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest
 import org.junit.jupiter.api.Assertions.*
@@ -24,10 +25,11 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
-import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
+import org.junit.jupiter.api.Assertions.assertEquals as assertEquals
 
 @MicronautTest(transactional = false)
 internal class RegistraChavePixServerTest(
@@ -48,15 +50,17 @@ internal class RegistraChavePixServerTest(
 
     @Test
     fun `deve adicionar uma nova chave pix`() {
-
         val clientId: String = UUID.randomUUID().toString()
 
         Mockito.`when`(itauClient.buscarDadosConta(clientId, TipoConta.CONTA_CORRENTE.toString())).thenReturn(
             HttpResponse.ok(dadosDaContaResponse())
         )
 
-        Mockito.`when`(bcbClient.registrarChavePix(createPixKeyRequest()))
-            .thenReturn(HttpResponse.ok(createPixKeyResponse()))
+        val createPixKeyRequest = createPixKeyRequest()
+        val createPixKeyResponse = createPixKeyResponse()
+
+        Mockito.`when`(bcbClient.registrarChavePix(createPixKeyRequest))
+            .thenReturn(HttpResponse.ok(createPixKeyResponse))
 
         val response = grpcClient.registrar(
             RegistraChavePixRequest.newBuilder()
@@ -69,6 +73,14 @@ internal class RegistraChavePixServerTest(
 
         assertNotNull(response.id)
         assertTrue(repository.existsById(response.id))
+        assertEquals(createPixKeyRequest.key, createPixKeyResponse.key)
+        assertEquals(createPixKeyRequest.bankAccount.accountNumber, createPixKeyResponse.bankAccount.accountNumber)
+        assertEquals(createPixKeyRequest.bankAccount.accountType, createPixKeyResponse.bankAccount.accountType)
+        assertEquals(createPixKeyRequest.bankAccount.branch, createPixKeyResponse.bankAccount.branch)
+        assertEquals(createPixKeyRequest.bankAccount.participant, createPixKeyResponse.bankAccount.participant)
+        assertEquals(createPixKeyRequest.owner.name, createPixKeyResponse.owner.name)
+        assertEquals(createPixKeyRequest.owner.taxIdNumber, createPixKeyResponse.owner.taxIdNumber)
+        assertEquals(createPixKeyRequest.owner.type, createPixKeyResponse.owner.type)
     }
 
     @Test
@@ -76,10 +88,16 @@ internal class RegistraChavePixServerTest(
         val clientId: String = UUID.randomUUID().toString()
 
         Mockito.`when`(itauClient.buscarDadosConta(clientId, TipoConta.CONTA_CORRENTE.toString())).thenReturn(
-            HttpResponse.ok(dadosDaContaResponse()))
+            HttpResponse.ok(dadosDaContaResponse())
+        )
 
         Mockito.`when`(bcbClient.registrarChavePix(createPixKeyRequest()))
-            .thenThrow(RuntimeException("UNPROCESSABLE_ENTITY"))
+            .thenThrow(
+                HttpClientResponseException(
+                    "UNPROCESSABLE_ENTITY",
+                    HttpResponse.notFound("UNPROCESSABLE_ENTITY")
+                )
+            )
 
         val excecao = assertThrows<StatusRuntimeException> {
             grpcClient.registrar(
@@ -102,7 +120,8 @@ internal class RegistraChavePixServerTest(
         val clientId: String = UUID.randomUUID().toString()
 
         Mockito.`when`(itauClient.buscarDadosConta(clientId, TipoConta.CONTA_CORRENTE.toString())).thenReturn(
-            HttpResponse.ok(dadosDaContaResponse()))
+            HttpResponse.ok(dadosDaContaResponse())
+        )
 
         Mockito.`when`(bcbClient.registrarChavePix(createPixKeyRequest()))
             .thenThrow(RuntimeException())
@@ -119,7 +138,7 @@ internal class RegistraChavePixServerTest(
         }
 
         with(excecao) {
-            assertEquals(Status.INTERNAL.code, this.status.code)
+            assertEquals(Status.UNAVAILABLE.code, this.status.code)
         }
     }
 
@@ -128,7 +147,8 @@ internal class RegistraChavePixServerTest(
         val clientId: String = UUID.randomUUID().toString()
 
         Mockito.`when`(itauClient.buscarDadosConta(clientId, TipoConta.CONTA_CORRENTE.toString())).thenReturn(
-            HttpResponse.ok(null))
+            HttpResponse.ok(null)
+        )
 
         val excecao = assertThrows<StatusRuntimeException> {
             grpcClient.registrar(
@@ -155,7 +175,8 @@ internal class RegistraChavePixServerTest(
             clientId,
             TipoChave.EMAIL,
             "gian.souza@teste.com.br",
-            TipoConta.CONTA_CORRENTE
+            TipoConta.CONTA_CORRENTE,
+            LocalDateTime.now()
         )
         repository.save(chavePix)
 
@@ -293,51 +314,6 @@ internal class RegistraChavePixServerTest(
         }
     }
 
-    @Test
-    fun `cria um objetos req e resp para o cadastro de uma nova chave pix`() {
-        val chavePix = ChavePix(
-            clientId = "123456",
-            tipoChave = TipoChave.EMAIL,
-            valorChave = "gian@teste.com",
-            tipoConta = TipoConta.CONTA_CORRENTE
-        )
-        assertNotNull(chavePix)
-        assertEquals("123456", chavePix.clientId)
-        assertEquals(TipoChave.EMAIL, chavePix.tipoChave)
-        assertEquals("gian@teste.com", chavePix.valorChave)
-        assertEquals(TipoConta.CONTA_CORRENTE, chavePix.tipoConta)
-
-        val createPixKeyRequest = createPixKeyRequest()
-        assertEquals(TipoChave.EMAIL, createPixKeyRequest.keyType)
-        assertEquals("gian.souza@teste.com.br", createPixKeyRequest.key)
-
-        val ownerRequest = createPixKeyRequest.owner
-        assertEquals(Type.NATURAL_PERSON, ownerRequest.type)
-        assertEquals("Pedro Albuquerque", ownerRequest.name)
-        assertEquals("33909163009", ownerRequest.taxIdNumber)
-
-        val bankRequest = createPixKeyRequest.bankAccount
-        assertEquals("60701190", bankRequest.participant)
-        assertEquals("0001", bankRequest.branch)
-        assertEquals("291900", bankRequest.accountNumber)
-        assertEquals(AccountType.CACC, bankRequest.accountType)
-
-        val createPixKeyResponse = createPixKeyResponse()
-        assertEquals(TipoChave.EMAIL, createPixKeyResponse.keyType)
-        assertEquals("gian.souza@teste.com.br", createPixKeyResponse.key)
-
-        val ownerResponse = createPixKeyResponse.owner
-        assertEquals(Type.NATURAL_PERSON, ownerResponse.type)
-        assertEquals("Pedro Albuquerque", ownerResponse.name)
-        assertEquals("33909163009", ownerResponse.taxIdNumber)
-
-        val bankResponse = createPixKeyResponse.bankAccount
-        assertEquals("60701190", bankResponse.participant)
-        assertEquals("0001", bankResponse.branch)
-        assertEquals("291900", bankResponse.accountNumber)
-        assertEquals(AccountType.CACC, bankResponse.accountType)
-    }
-
     private fun dadosDaContaResponse(): DadosDaContaResponse {
         val instituicao = InstituicaoResponse("ITAÚ UNIBANCO S.A.", "60701190")
         val titular = TitularResponse("5260263c-a3c1-4727-ae32-3bdb2538841b", "Pedro Albuquerque", "33909163009")
@@ -360,7 +336,13 @@ internal class RegistraChavePixServerTest(
     private fun createPixKeyResponse(): CreatePixKeyResponse {
         val bankAccount = BankAccountResponse("60701190", "0001", "291900", AccountType.CACC)
         val owner = OwnerResponse(Type.NATURAL_PERSON, "Pedro Albuquerque", "33909163009")
-        return CreatePixKeyResponse(TipoChave.EMAIL, "gian.souza@teste.com.br", bankAccount, owner, LocalDate.now().toString())
+        return CreatePixKeyResponse(
+            TipoChave.EMAIL,
+            "gian.souza@teste.com.br",
+            bankAccount,
+            owner,
+            "2021-08-27T16:57:14.822983"
+        )
     }
 
     @Factory

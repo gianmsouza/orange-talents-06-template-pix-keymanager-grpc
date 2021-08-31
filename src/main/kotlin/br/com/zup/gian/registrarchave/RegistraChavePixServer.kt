@@ -8,6 +8,7 @@ import br.com.zup.gian.client.BCBClient
 import br.com.zup.gian.client.ItauClient
 import io.grpc.Status
 import io.grpc.stub.StreamObserver
+import io.micronaut.http.client.exceptions.HttpClientResponseException
 import org.slf4j.LoggerFactory
 import javax.inject.Singleton
 
@@ -46,28 +47,17 @@ class RegistraChavePixServer(
 
             responseObserver!!.onNext(response)
             responseObserver.onCompleted()
-        } catch (error: Exception) {
-            logger.info("Registro de chave PIX com falha")
-
-            if (error.message.toString().contains("UNPROCESSABLE_ENTITY")) {
-                logger.error("Chave já cadastrada no Banco Central")
-
-                responseObserver?.onError(
-                    Status.ALREADY_EXISTS
-                        .withDescription(
-                            "Chave já cadastrada no Banco Central"
-                        )
+        } catch (e: Exception) {
+            logger.info("Registro de chave PIX com falha: ${e.message}")
+            when (e) {
+                is HttpClientResponseException -> responseObserver.onError(
+                    Status.ALREADY_EXISTS.withDescription("Chave já cadastrada no BCB").asRuntimeException()
+                )
+                else -> responseObserver.onError(
+                    Status.UNAVAILABLE.withDescription("Erro na comunicação com os serviços externos")
                         .asRuntimeException()
                 )
-                return
             }
-            responseObserver?.onError(
-                Status.INTERNAL
-                    .withDescription(
-                        "Não foi possível a comunicação com os serviços externos, tente novamente em alguns minutos"
-                    )
-                    .asRuntimeException()
-            )
         }
     }
 }

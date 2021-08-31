@@ -54,24 +54,17 @@ class RemoveChavePixServer(
                 return
             }
         } catch (e: Exception) {
-            logger.info("Erro ao excluir chave PIX")
+            logger.info("Erro ao excluir chave PIX: ${e.message}")
 
-            if (e.message.toString().contains("FORBIDDEN")) {
-                responseObserver.onError(
-                    Status.PERMISSION_DENIED
-                        .withDescription("Operação proibida")
+            when (e) {
+                is HttpClientResponseException -> responseObserver.onError(
+                    Status.PERMISSION_DENIED.withDescription("Operação proibida").asRuntimeException()
+                )
+                else -> responseObserver.onError(
+                    Status.UNAVAILABLE.withDescription("Erro na comunicação com os serviços externos")
                         .asRuntimeException()
                 )
-                return
             }
-
-            val error = Status.INTERNAL
-                .withDescription(
-                    "Não foi possível a comunicação com os serviços externos. Tente novamente mais tarde"
-                )
-                .asRuntimeException()
-
-            responseObserver?.onError(error)
         }
     }
 }

@@ -33,6 +33,7 @@ import org.mockito.Mockito
 import java.lang.RuntimeException
 import java.net.ConnectException
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -192,7 +193,12 @@ internal class RemoveChavePixServerTest(
         )
 
         Mockito.`when`(bcbClient.removerChavePix(chavePix.valorChave, deletePixKeyRequest(chavePix)))
-            .thenThrow(RuntimeException("FORBIDDEN"))
+            .thenThrow(
+                HttpClientResponseException(
+                    "UNPROCESSABLE_ENTITY",
+                    HttpResponse.notFound("UNPROCESSABLE_ENTITY")
+                )
+            )
 
         val excecao = assertThrows<StatusRuntimeException> {
             grpcClient.remover(
@@ -229,13 +235,19 @@ internal class RemoveChavePixServerTest(
         }
 
         with(excecao) {
-            assertEquals(Status.INTERNAL.code, this.status.code)
+            assertEquals(Status.UNAVAILABLE.code, this.status.code)
         }
     }
 
     private fun chavePix(): ChavePix {
         val clientId: String = UUID.randomUUID().toString()
-        return ChavePix(clientId, TipoChave.EMAIL, "gian.souza@teste.com.br", TipoConta.CONTA_CORRENTE)
+        return ChavePix(
+            clientId,
+            TipoChave.EMAIL,
+            "gian.souza@teste.com.br",
+            TipoConta.CONTA_CORRENTE,
+            LocalDateTime.now()
+        )
     }
 
     private fun deletePixKeyRequest(chavePix: ChavePix): DeletePixKeyRequest {
